@@ -1,6 +1,12 @@
+import {
+  ChordProParser,
+  CHORUS,
+  NONE,
+  VERSE,
+  TAB,
+} from '../../src';
+
 import '../matchers';
-import ChordProParser from '../../src/parser/chord_pro_parser';
-import { CHORUS, NONE, VERSE } from '../../src/constants';
 
 describe('ChordProParser', () => {
   it('parses a ChordPro chord sheet correctly', () => {
@@ -51,6 +57,13 @@ Let it [Am]be, let it [C/A][C/G#]be, let it [F]be, let it [C]be
     const song = new ChordProParser().parse(chordSheet);
 
     expect(song.lines[0].items[0]).toBeTag('comment', 'Intro [Dm7] [F6/B] [Cmaj7]');
+  });
+
+  it('correctly parses a directive containing curly brackets', () => {
+    const chordSheet = '{comment: Some {comment\\} }';
+    const song = new ChordProParser().parse(chordSheet);
+
+    expect(song.lines[0].items[0]).toBeTag('comment', 'Some {comment}');
   });
 
   it('parses meta data', () => {
@@ -147,8 +160,97 @@ Let it [F]be [C]
     const song = parser.parse(markedChordSheet);
     const lineTypes = song.lines.map((line) => line.type);
 
-    expect(lineTypes).toEqual([NONE, VERSE, NONE, NONE, NONE, CHORUS, NONE]);
+    expect(lineTypes).toEqual([VERSE, VERSE, VERSE, NONE, CHORUS, CHORUS, CHORUS]);
     expect(parser.warnings).toHaveLength(0);
+  });
+
+  it('allows escaped special characters in tags', () => {
+    const chordSheet = '{title: my \\{title\\}}';
+    const song = new ChordProParser().parse(chordSheet);
+    expect(song.title).toEqual('my {title}');
+  });
+
+  it('parses simple ternaries', () => {
+    const chordSheet = '%{title}';
+    const song = new ChordProParser().parse(chordSheet);
+    const expression = song.lines[0].items[0];
+
+    expect(expression).toBeTernary({
+      variable: 'title',
+      valueTest: null,
+      trueExpression: null,
+      falseExpression: null,
+    });
+  });
+
+  it('parses ternaries with a self-referencing true expression', () => {
+    const chordSheet = '%{artist|%{}}';
+    const song = new ChordProParser().parse(chordSheet);
+    const expression = song.lines[0].items[0];
+
+    expect(expression).toBeTernary({
+      variable: 'artist',
+      valueTest: null,
+      falseExpression: null,
+    });
+
+    expect(expression.trueExpression).toHaveLength(1);
+    expect(expression.trueExpression[0]).toBeTernary({
+      variable: null,
+      valueTest: null,
+      trueExpression: null,
+      falseExpression: null,
+    });
+  });
+
+  it('parses ternaries with value test', () => {
+    const chordSheet = '%{artist=X|artist is X|artist is not X}';
+    const song = new ChordProParser().parse(chordSheet);
+    const expression = song.lines[0].items[0];
+
+    expect(expression).toBeTernary({
+      variable: 'artist',
+      valueTest: 'X',
+    });
+
+    expect(expression.trueExpression).toHaveLength(1);
+    expect(expression.trueExpression[0]).toBeLiteral('artist is X');
+    expect(expression.falseExpression).toHaveLength(1);
+    expect(expression.falseExpression[0]).toBeLiteral('artist is not X');
+  });
+
+  it('parses nested ternaries', () => {
+    const chordSheet = '%{title|title is set and c is %{c|set|unset}|title is unset}';
+    const song = new ChordProParser().parse(chordSheet);
+    const expression = song.lines[0].items[0];
+
+    expect(expression).toBeTernary({
+      variable: 'title',
+      valueTest: null,
+    });
+
+    expect(expression.trueExpression).toHaveLength(2);
+    expect(expression.trueExpression[0]).toBeLiteral('title is set and c is ');
+    expect(expression.trueExpression[1]).toBeTernary({
+      variable: 'c',
+      valueTest: null,
+    });
+
+    expect(expression.trueExpression[1].trueExpression).toHaveLength(1);
+    expect(expression.trueExpression[1].trueExpression[0]).toBeLiteral('set');
+
+    expect(expression.trueExpression[1].falseExpression).toHaveLength(1);
+    expect(expression.trueExpression[1].falseExpression[0]).toBeLiteral('unset');
+
+    expect(expression.falseExpression).toHaveLength(1);
+    expect(expression.falseExpression[0]).toBeLiteral('title is unset');
+  });
+
+  it('Allows unescaped pipe characters outside of meta expressions', () => {
+    const chordSheet = '|: Let it be :|';
+    const song = new ChordProParser().parse(chordSheet);
+
+    expect(song.lines[0].items[0]).toBeChordLyricsPair('', '|: Let it be :|');
   });
 
   describe('it is forgiving to syntax errors', () => {
@@ -164,14 +266,6 @@ Let it [Am]be
       const chordSheetWithError = `
 Let it [Am]be
 [C]Whisper wor}ds of [F]wis[G]dom`;
-
-      new ChordProParser().parse(chordSheetWithError);
-    });
-
-    it('allows dangling %', () => {
-      const chordSheetWithError = `
-Let it [Am]be
-[C]Whisper wor%ds of [F]wis[G]dom`;
 
       new ChordProParser().parse(chordSheetWithError);
     });
@@ -223,5 +317,29 @@ Let it [Am]be
       expect(parser.warnings).toHaveLength(1);
       expect(parser.warnings[0].toString()).toMatch(/unexpected.+start_of_verse.+current.+chorus.+line 2/i);
     });
+  });
+
+  it('parses start_of_tab', () => {
+    const markedChordSheet = `
+{start_of_tab: Intro}
+D                       G             A7
+e|---2-----0--2-----2--0------------0----------------------0----|
+B|---3--3--------3--------3--0--3--(0)--3--0--2--0--2--3--(2)---|
+G|---2-----------------------0-------------0--------------------|
+D|---0-----------------------0-------------2--------------------|
+A|---------------------------2-------------0--------------------|
+E|---------------------------3----------------------------------|
+{end_of_tab}
+
+{start_of_verse}
+[D]Here comes the sun [G]Here comes [E7]the sun
+{end_of_verse}`.substring(1);
+
+    const parser = new ChordProParser();
+    const song = parser.parse(markedChordSheet);
+    const paragraphTypes = song.paragraphs.map((line) => line.type);
+
+    expect(paragraphTypes).toEqual([TAB, VERSE]);
+    expect(parser.warnings).toHaveLength(0);
   });
 });

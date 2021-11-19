@@ -9,9 +9,13 @@ export const pushNew = (collection, Klass) => {
 
 export const hasChordContents = (line) => line.items.some((item) => item instanceof ChordLyricsPair && item.chords);
 
+export const isEvaluatable = (item) => typeof item.evaluate === 'function';
+
 export const hasTextContents = (line) => (
   line.items.some((item) => (
-    item instanceof ChordLyricsPair && item.lyrics) || (item instanceof Tag && item.isRenderable()
+    (item instanceof ChordLyricsPair && item.lyrics)
+      || (item instanceof Tag && item.isRenderable())
+      || isEvaluatable(item)
   ))
 );
 
@@ -26,3 +30,30 @@ export const deprecate = (message) => {
     process.emitWarning(message);
   }
 };
+
+export const isPresent = (object) => object && object.length > 0;
+
+export const presence = (object) => (isPresent(object) ? object : null);
+
+function dasherize(string) {
+  return string.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+}
+
+export function scopeCss(css, scope) {
+  return Object
+    .entries(css)
+    .map(([selector, styles]) => {
+      const rules = Object
+        .entries(styles)
+        .map(([property, value]) => `${dasherize(property)}: ${value};`)
+        .join('\n  ');
+
+      const scopedSelector = `${scope} ${selector}`.trim();
+
+      return `
+${scopedSelector} {
+  ${rules}
+}`.substring(1);
+    })
+    .join('\n\n');
+}

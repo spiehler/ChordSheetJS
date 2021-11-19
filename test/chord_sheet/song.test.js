@@ -1,7 +1,11 @@
-import Song from '../../src/chord_sheet/song';
-import LineStub from '../cloneable_stub';
+import {
+  Song,
+  ChordSheetSerializer,
+} from '../../src';
+
 import { createSong } from '../utilities';
-import Metadata from '../../src/chord_sheet/metadata';
+import exampleSong from '../fixtures/song';
+import serializedSong from '../fixtures/serialized_song.json';
 
 const createLineStub = ({ renderable }) => (
   {
@@ -100,14 +104,10 @@ describe('Song', () => {
 
   describe('#clone', () => {
     it('returns a clone of the song', () => {
-      const song = new Song();
-      song.lines = ['foo', 'bar'].map((value) => new LineStub(value));
-      song.metadata = new Metadata({ foo: 'bar' });
-      const clonedSong = song.clone();
-
-      const actualValues = clonedSong.lines.map((line) => line.value);
-      expect(actualValues).toEqual(['foo', 'bar']);
-      expect(clonedSong.metadata).toEqual({ foo: 'bar' });
+      const serializedExampleSong = new ChordSheetSerializer().serialize(exampleSong);
+      const clone = exampleSong.clone();
+      const serializedClone = new ChordSheetSerializer().serialize(clone);
+      expect(serializedClone).toEqual(serializedExampleSong);
     });
   });
 
@@ -121,5 +121,13 @@ describe('Song', () => {
 
       expect(song.bodyLines).toEqual([renderableLine1, nonRenderableLine3]);
     });
+  });
+
+  it('can be serialized', () => {
+    expect(new ChordSheetSerializer().serialize(exampleSong)).toEqual(serializedSong);
+  });
+
+  it('can be deserialized', () => {
+    expect(new ChordSheetSerializer().deserialize(serializedSong)).toEqual(exampleSong);
   });
 });

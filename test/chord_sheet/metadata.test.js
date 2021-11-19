@@ -1,5 +1,6 @@
+import { Metadata } from '../../src';
+
 import '../matchers';
-import Metadata from '../../src/chord_sheet/metadata';
 
 describe('Metadata', () => {
   describe('new', () => {
@@ -71,6 +72,31 @@ describe('Metadata', () => {
       it('returns undefined', () => {
         const metadata = new Metadata({ author: ['John', 'Mary'] });
         expect(metadata.get('author.5')).toBeUndefined();
+      });
+    });
+
+    describe('_key', () => {
+      it('is calculated when when key and capo are defined', () => {
+        const metadata = new Metadata({ key: 'Bb', capo: '2' });
+        expect(metadata.get('_key')).toEqual('C');
+      });
+
+      it('returns undefined when when key or capo is undefined', () => {
+        const metadata = new Metadata({ key: 'Bb' });
+        expect(metadata.get('_key')).toBe(undefined);
+      });
+
+      it('is readonly on initialisation', () => {
+        const metadata = new Metadata({ _key: 'E' });
+        expect(metadata.get('_key')).toBe(undefined);
+      });
+
+      it('is readonly', () => {
+        const emptyMetadata = new Metadata();
+        const metadata = new Metadata();
+        metadata.add('_key', 'G');
+        expect(metadata.get('_key')).toBe(undefined);
+        expect(metadata).toEqual(emptyMetadata);
       });
     });
   });

@@ -1,6 +1,11 @@
-import ChordLyricsPair from '../src/chord_sheet/chord_lyrics_pair';
-import Tag from '../src/chord_sheet/tag';
-import Comment from '../src/chord_sheet/comment';
+import {
+  Chord,
+  ChordLyricsPair,
+  Tag,
+  Comment,
+  Ternary,
+  Literal,
+} from '../src';
 
 function toBeClassInstanceWithProperties(received, klass, properties) {
   const propertyNames = Object.keys(properties);
@@ -57,8 +62,25 @@ function toBeComment(received, content) {
   return toBeClassInstanceWithProperties(received, Comment, { content });
 }
 
+function toBeTernary(received, properties) {
+  return toBeClassInstanceWithProperties(received, Ternary, properties);
+}
+
+function toBeLiteral(received, string) {
+  return toBeClassInstanceWithProperties(received, Literal, { string });
+}
+
+function toBeChord(received, base, modifier, suffix, bassBase, bassModifier) {
+  return toBeClassInstanceWithProperties(received, Chord, {
+    base, modifier, suffix, bassBase, bassModifier,
+  });
+}
+
 expect.extend({
   toBeChordLyricsPair,
   toBeTag,
   toBeComment,
+  toBeTernary,
+  toBeLiteral,
+  toBeChord,
 });

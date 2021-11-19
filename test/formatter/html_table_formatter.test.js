@@ -1,7 +1,8 @@
+import { HtmlTableFormatter } from '../../src';
+
 import '../matchers';
-import HtmlTableFormatter from '../../src/formatter/html_table_formatter';
 import song from '../fixtures/song';
-import { createChordLyricsPair, createLine, createSong } from '../utilities';
+import { createChordLyricsPair, createSong } from '../utilities';
 
 describe('HtmlTableFormatter', () => {
   it('formats a song to a html chord sheet correctly', () => {
@@ -13,7 +14,8 @@ describe('HtmlTableFormatter', () => {
         + '<div class="paragraph">'
           + '<table class="row">'
             + '<tr>'
-              + '<td class="comment">Bridge</td>'
+              + '<td class="lyrics">Written by: </td>'
+              + '<td class="lyrics">John Lennon,Paul McCartney</td>'
             + '</tr>'
           + '</table>'
         + '</div>'
@@ -51,11 +53,16 @@ describe('HtmlTableFormatter', () => {
               + '<td class="lyrics">be </td>'
               + '<td class="lyrics"> </td>'
               + '<td class="lyrics"> </td>'
-              + '<td class="lyrics"> </td>'
+              + '<td class="lyrics"></td>'
             + '</tr>'
           + '</table>'
         + '</div>'
         + '<div class="paragraph chorus">'
+          + '<table class="row">'
+            + '<tr>'
+              + '<td class="comment">Breakdown</td>'
+            + '</tr>'
+          + '</table>'
           + '<table class="row">'
             + '<tr>'
               + '<td class="chord">Am</td>'
@@ -79,15 +86,15 @@ describe('HtmlTableFormatter', () => {
   describe('with option renderBlankLines:false', () => {
     it('does not include HTML for blank lines', () => {
       const songWithBlankLine = createSong([
-        createLine([
+        [
           createChordLyricsPair('C', 'Whisper words of wisdom'),
-        ]),
+        ],
 
-        createLine([]),
+        [],
 
-        createLine([
+        [
           createChordLyricsPair('Am', 'Whisper words of wisdom'),
-        ]),
+        ],
       ]);
 
       const expectedChordSheet = '<div class="chord-sheet">'
@@ -117,5 +124,69 @@ describe('HtmlTableFormatter', () => {
 
       expect(formatter.format(songWithBlankLine)).toEqual(expectedChordSheet);
     });
+  });
+
+  it('generates a CSS string', () => {
+    const expectedCss = `
+h1 {
+  font-size: 1.5em;
+}
+
+h2 {
+  font-size: 1.1em;
+}
+
+table {
+  border-spacing: 0;
+  color: inherit;
+}
+
+td {
+  padding: 3px 0;
+}
+
+.chord:not(:last-child) {
+  padding-right: 10px;
+}
+
+.paragraph {
+  margin-bottom: 1em;
+}`.substring(1);
+
+    expect(HtmlTableFormatter.cssString()).toEqual(expectedCss);
+  });
+
+  it('generates a scoped CSS string', () => {
+    const expectedCss = `
+.someScope h1 {
+  font-size: 1.5em;
+}
+
+.someScope h2 {
+  font-size: 1.1em;
+}
+
+.someScope table {
+  border-spacing: 0;
+  color: inherit;
+}
+
+.someScope td {
+  padding: 3px 0;
+}
+
+.someScope .chord:not(:last-child) {
+  padding-right: 10px;
+}
+
+.someScope .paragraph {
+  margin-bottom: 1em;
+}`.substring(1);
+
+    expect(HtmlTableFormatter.cssString('.someScope')).toEqual(expectedCss);
+  });
+
+  it('generates a CSS object', () => {
+    expect(typeof HtmlTableFormatter.cssObject()).toEqual('object');
   });
 });

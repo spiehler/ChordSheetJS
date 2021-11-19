@@ -8,7 +8,7 @@
   {{~/if~}}
 
   <div class="chord-sheet">
-    {{~#each paragraphs as |paragraph|~}}
+    {{~#each bodyParagraphs as |paragraph|~}}
       <div class="{{paragraphClasses paragraph}}">
         {{~#each lines as |line|~}}
           {{~#if (shouldRenderLine line)~}}
@@ -22,6 +22,10 @@
                   {{~#if (isComment item)~}}
                     <div class="comment">{{value}}</div>
                   {{~/if~}}
+                {{~/if~}}
+
+                {{~#if (isEvaluatable item)~}}
+                  <div class="column"><div class="chord"></div><div class="lyrics">{{evaluate item ../../../../song/metadata}}</div></div>
                 {{~/if~}}
               {{~/each~}}
             </div>

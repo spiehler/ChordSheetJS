@@ -1,4 +1,4 @@
-# ChordSheetJS [![Build Status](https://travis-ci.org/martijnversluis/ChordSheetJS.svg?branch=master)](https://travis-ci.org/martijnversluis/ChordSheetJS) [![npm version](https://badge.fury.io/js/chordsheetjs.svg)](https://badge.fury.io/js/chordsheetjs) [![Code Climate](https://codeclimate.com/github/martijnversluis/ChordSheetJS/badges/gpa.svg)](https://codeclimate.com/github/martijnversluis/ChordSheetJS)
+# ChordSheetJS ![example branch parameter](https://github.com/martijnversluis/ChordSheetJS/actions/workflows/ci.yml/badge.svg?branch=master) [![npm version](https://badge.fury.io/js/chordsheetjs.svg)](https://badge.fury.io/js/chordsheetjs) [![Code Climate](https://codeclimate.com/github/martijnversluis/ChordSheetJS/badges/gpa.svg)](https://codeclimate.com/github/martijnversluis/ChordSheetJS)
 
 A JavaScript library for parsing and formatting chord sheets
 
@@ -105,6 +105,144 @@ const disp = formatter.format(song);
 ```javascript
 const formatter = new ChordSheetJS.ChordProFormatter();
 const disp = formatter.format(song);
+```
+
+### Serialize/deserialize
+
+Chord sheets (`Song`s) can be serialized to plain JavaScript objects, which can be converted to JSON, XML etc by
+third-party libraries. The serialized object can also be deserialized back into a `Song`.
+
+```javascript
+const serializedSong = new ChordSheetSerializer().serialize(song);
+const deserialized = new ChordSheetSerializer().deserialize(serializedSong);
+```
+
+### Add styling
+
+The HTML formatters (HtmlTableFormatter and HtmlDivFormatter) can provide basic CSS to help with styling the output:
+
+```javascript
+HtmlTableFormatter.cssString();
+// .paragraph {
+//   margin-bottom: 1em;
+// }
+
+HtmlTableFormatter.cssString('.chordSheetViewer');
+// .chordSheetViewer .paragraph {
+//   margin-bottom: 1em;
+// }
+
+HtmlTableFormatter.cssObject();
+// '.paragraph': {
+//   marginBottom: '1em'
+// }
+```
+
+### Parsing and modifying chords
+
+```javascript
+import { parseChord } from 'chordsheetjs';
+```
+
+#### Parse
+
+```javascript
+const chord = parseChord('Ebsus4/Bb');
+```
+
+Parse numeric chords (Nashville system):
+
+```javascript
+const chord = parseChord('b1sus4/#3');
+```
+
+#### Display with #toString
+
+Use #toString() to convert the chord to a chord string (eg Dsus/F#)
+
+```javascript
+const chord = parseChord('Ebsus4/Bb');
+chord.toString(); // --> "Ebsus4/Bb"
+```
+
+#### Clone
+
+```javascript
+var chord2 = chord.clone();
+```
+
+#### Normalize
+
+Normalizes keys B#, E#, Cb and Fb to C, F, B and E
+
+```javascript
+const chord = parseChord('E#/B#'),
+normalizedChord = chord.normalize();
+normalizedChord.toString(); // --> "F/C"
+```
+
+#### Switch modifier
+
+Convert # to b and vice versa
+
+```javascript
+const chord = parseChord('Eb/Bb');
+const chord2 = chord.switchModifier();
+chord2.toString(); // --> "D#/A#"
+```
+
+#### Use specific modifier
+
+Set the chord to a specific modifier (# or b)
+
+```javascript
+const chord = parseChord('Eb/Bb');
+const chord2 = chord.useModifier('#');
+chord2.toString(); // --> "D#/A#"
+```
+
+```javascript
+const chord = parseChord('Eb/Bb');
+const chord2 = chord.useModifier('b');
+chord2.toString(); // --> "Eb/Bb"
+```
+
+#### Transpose up
+
+```javascript
+const chord = parseChord('Eb/Bb');
+const chord2 = chord.transposeUp();
+chord2.toString(); // -> "E/B"
+```
+
+#### Transpose down
+
+```javascript
+const chord = parseChord('Eb/Bb');
+const chord2 = chord.transposeDown();
+chord2.toString(); // -> "D/A"
+```
+
+#### Transpose
+
+```javascript
+const chord = parseChord('C/E');
+const chord2 = chord.transpose(4);
+chord2.toString(); // -> "E/G#"
+```
+
+```javascript
+const chord = parseChord('C/E');
+const chord2 = chord.transpose(-4);
+chord2.toString(); // -> "Ab/C"
+```
+
+#### Convert numeric chord to chord symbol
+
+```javascript
+const numericChord = parseChord('2/4');
+const chordSymbol = toChordSymbol(numericChord, 'E');
+chordSymbol.toString(); // -> "F#m/A"
 ```
 
 ## Supported ChordPro directives
@@ -242,7 +380,7 @@ metadata.get(&#39;author&#39;)   // =&gt; &#39;John&#39;</p>
 PDF conversion.</p>
 </dd>
 <dt><a href="#TextFormatter">TextFormatter</a></dt>
-<dd><p>Formats a sonf into a plain text chord sheet</p>
+<dd><p>Formats a song into a plain text chord sheet</p>
 </dd>
 <dt><a href="#ChordProParser">ChordProParser</a></dt>
 <dd><p>Parses a ChordPro chord sheet</p>
@@ -256,6 +394,18 @@ PDF conversion.</p>
 <dt><a href="#UltimateGuitarParser">UltimateGuitarParser</a></dt>
 <dd><p>Parses an Ultimate Guitar chord sheet with metadata
 Inherits from <a href="#ChordSheetParser">ChordSheetParser</a></p>
+</dd>
+<dt><a href="#Chord">Chord</a></dt>
+<dd><p>Base class for <a href="#ChordSymbol">ChordSymbol</a> and <a href="#NumericChord">NumericChord</a></p>
+</dd>
+<dt><a href="#ChordSheetSerializer">ChordSheetSerializer</a></dt>
+<dd><p>Serializes a song into een plain object, and deserializes the serialized object back into a <a href="#Song">Song</a></p>
+</dd>
+<dt><a href="#ChordSymbol">ChordSymbol</a></dt>
+<dd><p>Represents a chord symbol, such as Esus4</p>
+</dd>
+<dt><a href="#NumericChord">NumericChord</a></dt>
+<dd><p>Represents a numeric chord, such as b3sus4</p>
 </dd>
 </dl>
 
@@ -292,6 +442,9 @@ Inherits from <a href="#ChordSheetParser">ChordSheetParser</a></p>
 <dt><a href="#KEY">KEY</a> : <code>string</code></dt>
 <dd><p>Key meta directive. See <a href="https://www.chordpro.org/chordpro/directives-key/">https://www.chordpro.org/chordpro/directives-key/</a></p>
 </dd>
+<dt><a href="#_KEY">_KEY</a> : <code>string</code></dt>
+<dd><p>Key meta directive. See <a href="https://www.chordpro.org/chordpro/directives-key/">https://www.chordpro.org/chordpro/directives-key/</a></p>
+</dd>
 <dt><a href="#LYRICIST">LYRICIST</a> : <code>string</code></dt>
 <dd><p>Lyricist meta directive. See <a href="https://www.chordpro.org/chordpro/directives-lyricist/">https://www.chordpro.org/chordpro/directives-lyricist/</a></p>
 </dd>
@@ -315,6 +468,36 @@ Inherits from <a href="#ChordSheetParser">ChordSheetParser</a></p>
 </dd>
 <dt><a href="#YEAR">YEAR</a> : <code>string</code></dt>
 <dd><p>Year meta directive. See <a href="https://www.chordpro.org/chordpro/directives-year/">https://www.chordpro.org/chordpro/directives-year/</a></p>
+</dd>
+<dt><a href="#defaultCss">defaultCss</a> : <code>Object.&lt;string, Object.&lt;string, string&gt;&gt;</code></dt>
+<dd><p>Basic CSS, in object style à la useStyles, to use with output generated by {@link }HtmlTableFormatter}
+For a CSS string see <a href="#scopedCss">scopedCss</a></p>
+</dd>
+<dt><a href="#VERSE">VERSE</a> : <code>string</code></dt>
+<dd><p>Used to mark a paragraph as verse</p>
+</dd>
+<dt><a href="#CHORUS">CHORUS</a> : <code>string</code></dt>
+<dd><p>Used to mark a paragraph as chorus</p>
+</dd>
+<dt><a href="#NONE">NONE</a> : <code>string</code></dt>
+<dd><p>Used to mark a paragraph as not containing a line marked with a type</p>
+</dd>
+<dt><a href="#INDETERMINATE">INDETERMINATE</a> : <code>string</code></dt>
+<dd><p>Used to mark a paragraph as containing lines with both verse and chorus type</p>
+</dd>
+</dl>
+
+## Functions
+
+<dl>
+<dt><a href="#scopedCss">scopedCss(scope)</a> ⇒ <code>string</code></dt>
+<dd><p>Generates basic CSS, scoped within the provided selector, to use with output generated by <a href="#HtmlTableFormatter">HtmlTableFormatter</a></p>
+</dd>
+<dt><a href="#parseChord">parseChord(chordString)</a> ⇒ <code>null</code> | <code><a href="#ChordSymbol">ChordSymbol</a></code> | <code><a href="#NumericChord">NumericChord</a></code></dt>
+<dd><p>Tries to parse a chord string into a chord</p>
+</dd>
+<dt><a href="#toChordSymbol">toChordSymbol(numericChord, key)</a> ⇒ <code><a href="#ChordSymbol">ChordSymbol</a></code></dt>
+<dd><p>Converts a numeric chord into a chord symbol, using the provided key</p>
 </dd>
 </dl>
 
@@ -418,7 +601,7 @@ The items ([ChordLyricsPair](#ChordLyricsPair) or [Tag](#Tag) or [Comment](#Comm
 
 ### line.type : <code>string</code>
 The line type, This is set by the ChordProParser when it read tags like {start_of_chorus} or {start_of_verse}
-Values can be [VERSE](VERSE), [CHORUS](CHORUS) or [NONE](NONE)
+Values can be [VERSE](#VERSE), [CHORUS](#CHORUS) or [NONE](#NONE)
 
 **Kind**: instance property of [<code>Line</code>](#Line)  
 <a name="Line+isEmpty"></a>
@@ -453,13 +636,13 @@ Returns a deep copy of the line and all of its items
 <a name="Line+isVerse"></a>
 
 ### line.isVerse() ⇒ <code>boolean</code>
-Indicates whether the line type is [VERSE](VERSE)
+Indicates whether the line type is [VERSE](#VERSE)
 
 **Kind**: instance method of [<code>Line</code>](#Line)  
 <a name="Line+isChorus"></a>
 
 ### line.isChorus() ⇒ <code>boolean</code>
-Indicates whether the line type is [CHORUS](CHORUS)
+Indicates whether the line type is [CHORUS](#CHORUS)
 
 **Kind**: instance method of [<code>Line</code>](#Line)  
 <a name="Line+hasContent"></a>
@@ -532,6 +715,7 @@ Represents a paragraph of lines in a chord sheet
 * [Paragraph](#Paragraph)
     * [.lines](#Paragraph+lines) : [<code>Array.&lt;Line&gt;</code>](#Line)
     * [.type](#Paragraph+type) ⇒ <code>string</code>
+    * [.hasRenderableItems()](#Paragraph+hasRenderableItems) ⇒ <code>boolean</code>
 
 <a name="Paragraph+lines"></a>
 
@@ -543,9 +727,16 @@ The [Line](#Line) items of which the paragraph consists
 
 ### paragraph.type ⇒ <code>string</code>
 Tries to determine the common type for all lines. If the types for all lines are equal, it returns that type.
-If not, it returns [INDETERMINATE](INDETERMINATE)
+If not, it returns [INDETERMINATE](#INDETERMINATE)
 
 **Kind**: instance property of [<code>Paragraph</code>](#Paragraph)  
+<a name="Paragraph+hasRenderableItems"></a>
+
+### paragraph.hasRenderableItems() ⇒ <code>boolean</code>
+Indicates whether the paragraph contains lines with renderable items.
+
+**Kind**: instance method of [<code>Paragraph</code>](#Paragraph)  
+**See**: [Line.hasRenderableItems](Line.hasRenderableItems)  
 <a name="Song"></a>
 
 ## Song
@@ -559,6 +750,7 @@ Represents a song in a chord sheet. Currently a chord sheet can only have one so
     * [.paragraphs](#Song+paragraphs) : [<code>Array.&lt;Paragraph&gt;</code>](#Paragraph)
     * [.metadata](#Song+metadata) : [<code>Metadata</code>](#Metadata)
     * [.bodyLines](#Song+bodyLines) ⇒ [<code>Array.&lt;Line&gt;</code>](#Line)
+    * [.bodyParagraphs](#Song+bodyParagraphs) ⇒ [<code>Array.&lt;Paragraph&gt;</code>](#Paragraph)
     * ~~[.metaData](#Song+metaData) ⇒~~
     * [.clone()](#Song+clone) ⇒ [<code>Song</code>](#Song)
 
@@ -599,6 +791,14 @@ if you want to skip the "header lines": the lines that only contain meta data.
 
 **Kind**: instance property of [<code>Song</code>](#Song)  
 **Returns**: [<code>Array.&lt;Line&gt;</code>](#Line) - The song body lines  
+<a name="Song+bodyParagraphs"></a>
+
+### song.bodyParagraphs ⇒ [<code>Array.&lt;Paragraph&gt;</code>](#Paragraph)
+Returns the song paragraphs, skipping the paragraphs that only contain empty lines
+(empty as in not rendering any content)
+
+**Kind**: instance property of [<code>Song</code>](#Song)  
+**See**: [bodyLines](bodyLines)  
 <a name="Song+metaData"></a>
 
 ### ~~song.metaData ⇒~~
@@ -680,6 +880,22 @@ Returns a clone of the tag.
 Formats a song into a ChordPro chord sheet
 
 **Kind**: global class  
+
+* [ChordProFormatter](#ChordProFormatter)
+    * [new ChordProFormatter(options)](#new_ChordProFormatter_new)
+    * [.format(song)](#ChordProFormatter+format) ⇒ <code>string</code>
+
+<a name="new_ChordProFormatter_new"></a>
+
+### new ChordProFormatter(options)
+Instantiate
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| options | <code>Object</code> | options |
+| options.evaluate | <code>boolean</code> | Whether or not to evaluate meta expressions. For more info about meta expression, see: https://bit.ly/2SC9c2u |
+
 <a name="ChordProFormatter+format"></a>
 
 ### chordProFormatter.format(song) ⇒ <code>string</code>
@@ -698,6 +914,14 @@ Formats a song into a ChordPro chord sheet.
 Formats a song into HTML. It uses DIVs to align lyrics with chords, which makes it useful for responsive web pages.
 
 **Kind**: global class  
+
+* [HtmlDivFormatter](#HtmlDivFormatter)
+    * _instance_
+        * [.format(song)](#HtmlDivFormatter+format) ⇒ <code>string</code>
+    * _static_
+        * [.cssString(scope)](#HtmlDivFormatter.cssString) ⇒ <code>string</code>
+        * [.cssObject()](#HtmlDivFormatter.cssObject) ⇒ <code>Object.&lt;string, Object.&lt;string, string&gt;&gt;</code>
+
 <a name="HtmlDivFormatter+format"></a>
 
 ### htmlDivFormatter.format(song) ⇒ <code>string</code>
@@ -710,6 +934,40 @@ Formats a song into HTML.
 | --- | --- | --- |
 | song | [<code>Song</code>](#Song) | The song to be formatted |
 
+<a name="HtmlDivFormatter.cssString"></a>
+
+### HtmlDivFormatter.cssString(scope) ⇒ <code>string</code>
+Generates basic CSS, optionally scoped within the provided selector, to use with output generated by
+[HtmlDivFormatter](#HtmlDivFormatter)
+
+For example, execute cssString('.chordSheetViewer') will result in CSS like:
+
+    .chordSheetViewer .paragraph {
+      margin-bottom: 1em;
+    }
+
+**Kind**: static method of [<code>HtmlDivFormatter</code>](#HtmlDivFormatter)  
+**Returns**: <code>string</code> - the CSS string  
+
+| Param | Description |
+| --- | --- |
+| scope | the CSS scope to use, for example `.chordSheetViewer` |
+
+<a name="HtmlDivFormatter.cssObject"></a>
+
+### HtmlDivFormatter.cssObject() ⇒ <code>Object.&lt;string, Object.&lt;string, string&gt;&gt;</code>
+Basic CSS, in object style à la useStyles, to use with output generated by [HtmlDivFormatter](#HtmlDivFormatter)
+
+Example:
+
+    '.paragraph': {
+      marginBottom: '1em'
+    }
+
+For a CSS string see [cssString](cssString)
+
+**Kind**: static method of [<code>HtmlDivFormatter</code>](#HtmlDivFormatter)  
+**Returns**: <code>Object.&lt;string, Object.&lt;string, string&gt;&gt;</code> - the CSS object  
 <a name="HtmlFormatter"></a>
 
 ## HtmlFormatter
@@ -723,6 +981,14 @@ Formats a song into HTML. It uses TABLEs to align lyrics with chords, which make
 PDF conversion.
 
 **Kind**: global class  
+
+* [HtmlTableFormatter](#HtmlTableFormatter)
+    * _instance_
+        * [.format(song)](#HtmlTableFormatter+format) ⇒ <code>string</code>
+    * _static_
+        * [.cssString(scope)](#HtmlTableFormatter.cssString) ⇒ <code>string</code>
+        * [.cssObject()](#HtmlTableFormatter.cssObject) ⇒ <code>Object.&lt;string, Object.&lt;string, string&gt;&gt;</code>
+
 <a name="HtmlTableFormatter+format"></a>
 
 ### htmlTableFormatter.format(song) ⇒ <code>string</code>
@@ -735,10 +1001,43 @@ Formats a song into HTML.
 | --- | --- | --- |
 | song | [<code>Song</code>](#Song) | The song to be formatted |
 
+<a name="HtmlTableFormatter.cssString"></a>
+
+### HtmlTableFormatter.cssString(scope) ⇒ <code>string</code>
+Generates basic CSS, optionally scoped within the provided selector, to use with output generated by
+[HtmlTableFormatter](#HtmlTableFormatter)
+
+For example, execute cssString('.chordSheetViewer') will result in CSS like:
+
+    .chordSheetViewer .paragraph {
+      margin-bottom: 1em;
+    }
+
+**Kind**: static method of [<code>HtmlTableFormatter</code>](#HtmlTableFormatter)  
+**Returns**: <code>string</code> - the CSS string  
+
+| Param | Description |
+| --- | --- |
+| scope | the CSS scope to use, for example `.chordSheetViewer` |
+
+<a name="HtmlTableFormatter.cssObject"></a>
+
+### HtmlTableFormatter.cssObject() ⇒ <code>Object.&lt;string, Object.&lt;string, string&gt;&gt;</code>
+Basic CSS, in object style à la useStyles, to use with output generated by [HtmlTableFormatter](#HtmlTableFormatter)
+For a CSS string see [cssString](cssString)
+
+Example:
+
+    '.paragraph': {
+      marginBottom: '1em'
+    }
+
+**Kind**: static method of [<code>HtmlTableFormatter</code>](#HtmlTableFormatter)  
+**Returns**: <code>Object.&lt;string, Object.&lt;string, string&gt;&gt;</code> - the CSS object  
 <a name="TextFormatter"></a>
 
 ## TextFormatter
-Formats a sonf into a plain text chord sheet
+Formats a song into a plain text chord sheet
 
 **Kind**: global class  
 <a name="TextFormatter+format"></a>
@@ -827,7 +1126,8 @@ Represents a parser warning, currently only used by ChordProParser.
 
 * [ParserWarning](#ParserWarning)
     * [.message](#ParserWarning+message) : <code>string</code>
-    * [.lineNumber](#ParserWarning+lineNumber) : <code>integer</code>
+    * [.lineNumber](#ParserWarning+lineNumber) : <code>number</code>
+    * [.column](#ParserWarning+column) : <code>number</code>
     * [.toString()](#ParserWarning+toString) ⇒ <code>string</code>
 
 <a name="ParserWarning+message"></a>
@@ -838,8 +1138,14 @@ The warning message
 **Kind**: instance property of [<code>ParserWarning</code>](#ParserWarning)  
 <a name="ParserWarning+lineNumber"></a>
 
-### parserWarning.lineNumber : <code>integer</code>
+### parserWarning.lineNumber : <code>number</code>
 The chord sheet line number on which the warning occurred
+
+**Kind**: instance property of [<code>ParserWarning</code>](#ParserWarning)  
+<a name="ParserWarning+column"></a>
+
+### parserWarning.column : <code>number</code>
+The chord sheet column on which the warning occurred
 
 **Kind**: instance property of [<code>ParserWarning</code>](#ParserWarning)  
 <a name="ParserWarning+toString"></a>
@@ -856,6 +1162,190 @@ Parses an Ultimate Guitar chord sheet with metadata
 Inherits from [ChordSheetParser](#ChordSheetParser)
 
 **Kind**: global class  
+<a name="Chord"></a>
+
+## Chord
+Base class for [ChordSymbol](#ChordSymbol) and [NumericChord](#NumericChord)
+
+**Kind**: global class  
+<a name="Chord+clone"></a>
+
+### chord.clone() ⇒ [<code>Chord</code>](#Chord)
+Returns a deep copy of the chord
+
+**Kind**: instance method of [<code>Chord</code>](#Chord)  
+<a name="ChordSheetSerializer"></a>
+
+## ChordSheetSerializer
+Serializes a song into een plain object, and deserializes the serialized object back into a [Song](#Song)
+
+**Kind**: global class  
+
+* [ChordSheetSerializer](#ChordSheetSerializer)
+    * [.serialize()](#ChordSheetSerializer+serialize) ⇒
+    * [.deserialize(serializedSong)](#ChordSheetSerializer+deserialize) ⇒ [<code>Song</code>](#Song)
+
+<a name="ChordSheetSerializer+serialize"></a>
+
+### chordSheetSerializer.serialize() ⇒
+Serializes the chord sheet to a plain object, which can be converted to any format like JSON, XML etc
+Can be deserialized using [deserialize](deserialize)
+
+**Kind**: instance method of [<code>ChordSheetSerializer</code>](#ChordSheetSerializer)  
+**Returns**: object A plain JS object containing all chord sheet data  
+<a name="ChordSheetSerializer+deserialize"></a>
+
+### chordSheetSerializer.deserialize(serializedSong) ⇒ [<code>Song</code>](#Song)
+Deserializes a song that has been serialized using [serialize](serialize)
+
+**Kind**: instance method of [<code>ChordSheetSerializer</code>](#ChordSheetSerializer)  
+**Returns**: [<code>Song</code>](#Song) - The deserialized song  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| serializedSong | <code>object</code> | The serialized song |
+
+<a name="ChordSymbol"></a>
+
+## ChordSymbol
+Represents a chord symbol, such as Esus4
+
+**Kind**: global class  
+
+* [ChordSymbol](#ChordSymbol)
+    * [.normalize()](#ChordSymbol+normalize) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+    * [.switchModifier()](#ChordSymbol+switchModifier) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+    * [.useModifier(newModifier)](#ChordSymbol+useModifier) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+    * [.transposeUp()](#ChordSymbol+transposeUp) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+    * [.transposeDown()](#ChordSymbol+transposeDown) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+    * [.transpose(delta)](#ChordSymbol+transpose) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+    * [.toString()](#ChordSymbol+toString) ⇒ <code>string</code> \| <code>\*</code>
+
+<a name="ChordSymbol+normalize"></a>
+
+### chordSymbol.normalize() ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+Normalizes the chord:
+- Fb becomes E
+- Cb becomes B
+- B# becomes C
+- E# becomes F
+If the chord is already normalized, this will return a copy.
+
+**Kind**: instance method of [<code>ChordSymbol</code>](#ChordSymbol)  
+**Returns**: [<code>ChordSymbol</code>](#ChordSymbol) - the normalized chord  
+<a name="ChordSymbol+switchModifier"></a>
+
+### chordSymbol.switchModifier() ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+Switches between '#' and 'b' as modifiers. If
+
+**Kind**: instance method of [<code>ChordSymbol</code>](#ChordSymbol)  
+**Returns**: [<code>ChordSymbol</code>](#ChordSymbol) - the changed chord  
+<a name="ChordSymbol+useModifier"></a>
+
+### chordSymbol.useModifier(newModifier) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+Switches to the specified modifier
+
+**Kind**: instance method of [<code>ChordSymbol</code>](#ChordSymbol)  
+**Returns**: [<code>ChordSymbol</code>](#ChordSymbol) - the changed chord  
+
+| Param | Description |
+| --- | --- |
+| newModifier | the modifier to use: `'#'` or `'b'` |
+
+<a name="ChordSymbol+transposeUp"></a>
+
+### chordSymbol.transposeUp() ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+Transposes the chord up by 1 semitone. Eg. A becomes A#, Eb becomes E
+
+**Kind**: instance method of [<code>ChordSymbol</code>](#ChordSymbol)  
+**Returns**: [<code>ChordSymbol</code>](#ChordSymbol) - the transposed chord  
+<a name="ChordSymbol+transposeDown"></a>
+
+### chordSymbol.transposeDown() ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+Transposes the chord down by 1 semitone. Eg. A# becomes A, E becomes Eb
+
+**Kind**: instance method of [<code>ChordSymbol</code>](#ChordSymbol)  
+**Returns**: [<code>ChordSymbol</code>](#ChordSymbol) - the transposed chord  
+<a name="ChordSymbol+transpose"></a>
+
+### chordSymbol.transpose(delta) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+Transposes the chord by the specified number of semitones
+
+**Kind**: instance method of [<code>ChordSymbol</code>](#ChordSymbol)  
+**Returns**: [<code>ChordSymbol</code>](#ChordSymbol) - the transposed chord  
+
+| Param | Description |
+| --- | --- |
+| delta | de number of semitones |
+
+<a name="ChordSymbol+toString"></a>
+
+### chordSymbol.toString() ⇒ <code>string</code> \| <code>\*</code>
+Convert the chord to a string, eg. `'Esus4/G#'`
+
+**Kind**: instance method of [<code>ChordSymbol</code>](#ChordSymbol)  
+<a name="NumericChord"></a>
+
+## NumericChord
+Represents a numeric chord, such as b3sus4
+
+**Kind**: global class  
+
+* [NumericChord](#NumericChord)
+    * [.normalize()](#NumericChord+normalize) ⇒ [<code>NumericChord</code>](#NumericChord)
+    * [.switchModifier()](#NumericChord+switchModifier) ⇒ [<code>NumericChord</code>](#NumericChord)
+    * [.useModifier()](#NumericChord+useModifier) ⇒ [<code>NumericChord</code>](#NumericChord)
+    * [.transposeUp()](#NumericChord+transposeUp) ⇒ [<code>NumericChord</code>](#NumericChord)
+    * [.transposeDown()](#NumericChord+transposeDown) ⇒ [<code>NumericChord</code>](#NumericChord)
+    * [.transpose(delta)](#NumericChord+transpose) ⇒ [<code>NumericChord</code>](#NumericChord)
+
+<a name="NumericChord+normalize"></a>
+
+### numericChord.normalize() ⇒ [<code>NumericChord</code>](#NumericChord)
+Normalizes the chord - this is a noop for numeric chords.
+
+**Kind**: instance method of [<code>NumericChord</code>](#NumericChord)  
+**Returns**: [<code>NumericChord</code>](#NumericChord) - a copy of the chord object  
+<a name="NumericChord+switchModifier"></a>
+
+### numericChord.switchModifier() ⇒ [<code>NumericChord</code>](#NumericChord)
+Switches between '#' and 'b' as modifiers - this is a noop for numeric chords.
+
+**Kind**: instance method of [<code>NumericChord</code>](#NumericChord)  
+**Returns**: [<code>NumericChord</code>](#NumericChord) - a copy of the chord object  
+<a name="NumericChord+useModifier"></a>
+
+### numericChord.useModifier() ⇒ [<code>NumericChord</code>](#NumericChord)
+Switches to the specified modifier - this is a noop for numeric chords.
+
+**Kind**: instance method of [<code>NumericChord</code>](#NumericChord)  
+**Returns**: [<code>NumericChord</code>](#NumericChord) - a copy of the chord object  
+<a name="NumericChord+transposeUp"></a>
+
+### numericChord.transposeUp() ⇒ [<code>NumericChord</code>](#NumericChord)
+Transposes the chord up by 1 semitone - this is a noop for numeric chords.
+
+**Kind**: instance method of [<code>NumericChord</code>](#NumericChord)  
+**Returns**: [<code>NumericChord</code>](#NumericChord) - a copy of the chord object  
+<a name="NumericChord+transposeDown"></a>
+
+### numericChord.transposeDown() ⇒ [<code>NumericChord</code>](#NumericChord)
+Transposes the chord down by 1 semitone - this is a noop for numeric chords.
+
+**Kind**: instance method of [<code>NumericChord</code>](#NumericChord)  
+**Returns**: [<code>NumericChord</code>](#NumericChord) - a copy of the chord object  
+<a name="NumericChord+transpose"></a>
+
+### numericChord.transpose(delta) ⇒ [<code>NumericChord</code>](#NumericChord)
+Transposes the chord by the specified number of semitones - this is a noop for numeric chords.
+
+**Kind**: instance method of [<code>NumericChord</code>](#NumericChord)  
+**Returns**: [<code>NumericChord</code>](#NumericChord) - a copy of the chord object  
+
+| Param | Description |
+| --- | --- |
+| delta | de number of semitones |
+
 <a name="ALBUM"></a>
 
 ## ALBUM : <code>string</code>
@@ -916,6 +1406,12 @@ End of verse directive. See https://www.chordpro.org/chordpro/directives-env_ver
 Key meta directive. See https://www.chordpro.org/chordpro/directives-key/
 
 **Kind**: global constant  
+<a name="_KEY"></a>
+
+## \_KEY : <code>string</code>
+Key meta directive. See https://www.chordpro.org/chordpro/directives-key/
+
+**Kind**: global constant  
 <a name="LYRICIST"></a>
 
 ## LYRICIST : <code>string</code>
@@ -964,3 +1460,70 @@ Title meta directive. See https://www.chordpro.org/chordpro/directives-title/
 Year meta directive. See https://www.chordpro.org/chordpro/directives-year/
 
 **Kind**: global constant  
+<a name="defaultCss"></a>
+
+## defaultCss : <code>Object.&lt;string, Object.&lt;string, string&gt;&gt;</code>
+Basic CSS, in object style à la useStyles, to use with output generated by {@link }HtmlTableFormatter}
+For a CSS string see [scopedCss](#scopedCss)
+
+**Kind**: global constant  
+<a name="VERSE"></a>
+
+## VERSE : <code>string</code>
+Used to mark a paragraph as verse
+
+**Kind**: global constant  
+<a name="CHORUS"></a>
+
+## CHORUS : <code>string</code>
+Used to mark a paragraph as chorus
+
+**Kind**: global constant  
+<a name="NONE"></a>
+
+## NONE : <code>string</code>
+Used to mark a paragraph as not containing a line marked with a type
+
+**Kind**: global constant  
+<a name="INDETERMINATE"></a>
+
+## INDETERMINATE : <code>string</code>
+Used to mark a paragraph as containing lines with both verse and chorus type
+
+**Kind**: global constant  
+<a name="scopedCss"></a>
+
+## scopedCss(scope) ⇒ <code>string</code>
+Generates basic CSS, scoped within the provided selector, to use with output generated by [HtmlTableFormatter](#HtmlTableFormatter)
+
+**Kind**: global function  
+**Returns**: <code>string</code> - the CSS string  
+
+| Param | Description |
+| --- | --- |
+| scope | the CSS scope to use, for example `.chordSheetViewer` |
+
+<a name="parseChord"></a>
+
+## parseChord(chordString) ⇒ <code>null</code> \| [<code>ChordSymbol</code>](#ChordSymbol) \| [<code>NumericChord</code>](#NumericChord)
+Tries to parse a chord string into a chord
+
+**Kind**: global function  
+
+| Param | Description |
+| --- | --- |
+| chordString | the chord string, eg Esus4/G# or 1sus4/#3 |
+
+<a name="toChordSymbol"></a>
+
+## toChordSymbol(numericChord, key) ⇒ [<code>ChordSymbol</code>](#ChordSymbol)
+Converts a numeric chord into a chord symbol, using the provided key
+
+**Kind**: global function  
+**Returns**: [<code>ChordSymbol</code>](#ChordSymbol) - the resulting chord symbol  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| numericChord | [<code>NumericChord</code>](#NumericChord) |  |
+| key | <code>string</code> | the to use, sp anything between Ab and G# |
+

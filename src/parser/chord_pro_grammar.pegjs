@@ -12,13 +12,13 @@ LineWithNewline
 }
 
 Line
-  = lyrics:Lyrics? tokens:Token* chord:Chord? comment:Comment? {
+  = lyrics:Lyrics? tokens:Token* chords:Chord? comment:Comment? {
   return {
     type: "line",
     items: [
-      lyrics ? {type: "chordLyricsPair", chord: null, lyrics} : null,
+      lyrics ? {type: "chordLyricsPair", chords: '', lyrics} : null,
       ...tokens,
-      chord ? {type: "chordLyricsPair", chord, lyrics: null} : null,
+      chords ? {type: "chordLyricsPair", chords, lyrics: ''} : null,
       comment ? {type: "comment", comment} : null
     ].filter(x => x)
   }
@@ -33,8 +33,8 @@ Comment
 }
 
 ChordLyricsPair
-  = chord: Chord lyrics:$(Lyrics*) {
-  return { type: "chordLyricsPair", chord, lyrics }
+  = chords: Chord lyrics:$(Lyrics*) {
+  return { type: "chordLyricsPair", chords: chords || '', lyrics }
 }
 
 Lyrics
@@ -43,8 +43,8 @@ Lyrics
 }
 
 Chord
-  = !Escape "[" chord:ChordChar* "]" {
-  return chord.map(c => c.char || c).join("");
+  = !Escape "[" chords:ChordChar* "]" {
+  return chords.map(c => c.char || c).join("");
 }
 
 ChordChar
@@ -57,26 +57,37 @@ ChordChar
     { return sequence; }
 
 MetaTernary
-  = "%{" _ variableName:$(MetaVariableName?) _ expressions:MetaTernaryTrueFalseExpressions? _ "}" {
+  = "%{" _ variableName:$(MetaVariableName?) valueTest:MetaValueTest? _ expressions:MetaTernaryTrueFalseExpressions? _ "}" {
   return {
-    "type": "metaTernary",
-    variable: variableName,
-    expressions
+    "type": "ternary",
+    variable: variableName.length > 0 ? variableName : null,
+    valueTest,
+    ...expressions,
+    location: location().start
   };
 }
+
+MetaValueTest
+  = "=" _ testValue:MetaTestValue {
+  return testValue;
+}
+
+MetaTestValue
+  = $(Char+)
 
 MetaTernaryTrueFalseExpressions
   = "|" _ trueExpression:MetaExpression _ falseExpression:MetaTernaryFalseExpression? _ {
   return {
-    "type": "trueFalseExpression",
+    "type": "ternary",
     trueExpression,
-    falseExpression
+    falseExpression,
+    location: location().start
   }
 }
 
 MetaTernaryFalseExpression
   = "|" _ falseExpression:MetaExpression {
-  return {"type": "falseExpression", falseExpression: falseExpression };
+  return falseExpression;
 }
 
 MetaVariableName
@@ -88,8 +99,8 @@ MetaExpression
 LyricsChar
   = Char
   / "]" { return {type: "char", char: "]"}; }
+  / "|" { return {type: "char", char: "|"}; }
   / "}" { return {type: "char", char: "\x7d"}; }
-  / "%" { return {type: "char", char: "%"}; }
 
 Char
   = [^\|\[\]\\\{\}%#\r\n]
@@ -111,13 +122,14 @@ Tag
   return {
     type: "tag",
     name: tagName,
-    value: tagColonWithValue
+    value: tagColonWithValue,
+    location: location().start
   }
 }
 
 TagColonWithValue
-  = ":" _ tagValue:$(TagValue) {
-  return tagValue;
+  = ":" _ tagValue:TagValue {
+  return tagValue.map(c => c.char || c).join('');
 }
 
 TagName
@@ -127,11 +139,12 @@ TagValue
   = TagValueChar+
 
 TagValueChar
-  = [^\}\r\n]
+  = [^}\\\r\n]
   / Escape
     sequence:(
         "\\" { return {type: "char", char: "\\"}; }
       / "}" { return {type: "char", char: "\x7d"}; }
+      / "{" { return {type: "char", char: "\x7b"}; }
     )
     { return sequence; }
 
@@ -158,3 +171,6 @@ Escape
 
 Pound
   = "#"
+
+Percent
+  = "%"

@@ -3,7 +3,7 @@ import Tag from '../chord_sheet/tag';
 import { hasChordContents, hasTextContents, padLeft } from '../utilities';
 
 /**
- * Formats a sonf into a plain text chord sheet
+ * Formats a song into a plain text chord sheet
  */
 class TextFormatter {
   /**
@@ -30,19 +30,24 @@ class TextFormatter {
   }
 
   formatParagraphs(song) {
-    return song.paragraphs.map((paragraph) => this.formatParagraph(paragraph)).join('\n\n');
+    const { bodyParagraphs, metadata } = song;
+
+    return bodyParagraphs
+      .map((paragraph) => this.formatParagraph(paragraph, metadata))
+      .join('\n\n');
   }
 
-  formatParagraph(paragraph) {
-    const renderableLines = paragraph.lines.filter((line) => line.hasRenderableItems());
-    const formattedLines = renderableLines.map((line) => this.formatLine(line));
-    return formattedLines.join('\n');
+  formatParagraph(paragraph, metadata) {
+    return paragraph.lines
+      .filter((line) => line.hasRenderableItems())
+      .map((line) => this.formatLine(line, metadata))
+      .join('\n');
   }
 
-  formatLine(line) {
+  formatLine(line, metadata) {
     const parts = [
       this.formatLineTop(line),
-      this.formatLineBottom(line),
+      this.formatLineBottom(line, metadata),
     ];
 
     return parts
@@ -76,9 +81,9 @@ class TextFormatter {
   }
 
   chordLyricsPairLength(chordLyricsPair) {
-    const { chords } = chordLyricsPair;
-    const chordsLength = chords.length;
-    const lyricsLength = chordLyricsPair.lyrics.length;
+    const { chords, lyrics } = chordLyricsPair;
+    const chordsLength = (chords || '').length;
+    const lyricsLength = (lyrics || '').length;
 
     if (chordsLength >= lyricsLength) {
       return chordsLength + 1;
@@ -93,34 +98,38 @@ class TextFormatter {
     }
 
     if (item instanceof ChordLyricsPair) {
-      return padLeft(item.chords, this.chordLyricsPairLength(item));
+      return padLeft(item.chords || '', this.chordLyricsPairLength(item));
     }
 
     return '';
   }
 
-  formatLineBottom(line) {
+  formatLineBottom(line, metadata) {
     if (hasTextContents(line)) {
-      return this.formatLineWithFormatter(line, this.formatItemBottom);
+      return this.formatLineWithFormatter(line, this.formatItemBottom, metadata);
     }
 
     return null;
   }
 
-  formatLineWithFormatter(line, formatter) {
+  formatLineWithFormatter(line, formatter, metadata) {
     return line
       .items
-      .map((item) => formatter.call(this, item))
+      .map((item) => formatter.call(this, item, metadata))
       .join('');
   }
 
-  formatItemBottom(item) {
+  formatItemBottom(item, metadata) {
     if (item instanceof Tag && item.isRenderable()) {
       return item.value;
     }
 
     if (item instanceof ChordLyricsPair) {
       return padLeft(item.lyrics, this.chordLyricsPairLength(item));
+    }
+
+    if (typeof item.evaluate === 'function') {
+      return item.evaluate(metadata);
     }
 
     return '';
